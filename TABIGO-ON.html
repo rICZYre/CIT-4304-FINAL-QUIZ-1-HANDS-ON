@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JavaScript Sessions Example</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom, #74ebd5, #acb6e5);
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #555;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      text-align: left;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    input {
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #logout-btn {
+      background: #f44336;
+      margin-top: 15px;
+    }
+
+    #logout-btn:hover {
+      background: #e53935;
+    }
+
+    #string-list div {
+      text-align: left;
+      padding: 5px 0;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .link {
+      color: #007bff;
+      text-decoration: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container" id="login-page">
+    <h2>Login</h2>
+    <form id="login-form">
+      <label for="username">Username:</label>
+      <input type="text" id="username" required>
+      <label for="password">Password:</label>
+      <input type="password" id="password" required>
+      <button type="submit">Login</button>
+    </form>
+    <p>Don't have an account? <span class="link" id="create-account-link">Create one</span></p>
+  </div>
+
+  <div class="container hidden" id="create-account-page">
+    <h2>Create Account</h2>
+    <form id="create-account-form">
+      <label for="new-username">New Username:</label>
+      <input type="text" id="new-username" required>
+      <label for="new-password">New Password:</label>
+      <input type="password" id="new-password" required>
+      <button type="submit">Create Account</button>
+    </form>
+    <p>Already have an account? <span class="link" id="back-to-login">Login</span></p>
+  </div>
+
+  <div class="container hidden" id="main-page">
+    <h2>Welcome!</h2>
+    <form id="string-form">
+      <label for="input-string">Enter a string:</label>
+      <input type="text" id="input-string" required>
+      <button type="submit">Submit</button>
+    </form>
+    <div id="string-list"></div>
+    <button id="logout-btn">Logout</button>
+  </div>
+
+  <script>
+    // Account storage
+    const accounts = JSON.parse(localStorage.getItem("accounts")) || {};
+
+    // Check session on load
+    window.onload = function () {
+      const isLoggedIn = localStorage.getItem("isLoggedIn");
+      if (isLoggedIn === "true") {
+        showMainPage();
+      } else {
+        showLoginPage();
+      }
+    };
+
+    // Login logic
+    document.getElementById("login-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+
+      if (accounts[username] === password) {
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("currentUser", username);
+        showMainPage();
+      } else {
+        alert("Invalid username or password.");
+      }
+    });
+
+    // Logout logic
+    document.getElementById("logout-btn").addEventListener("click", function () {
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("currentUser");
+      showLoginPage();
+    });
+
+    // Handle string submission
+    document.getElementById("string-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const currentUser = localStorage.getItem("currentUser");
+      const inputString = document.getElementById("input-string").value;
+
+      let userStrings = JSON.parse(localStorage.getItem(`${currentUser}_strings`)) || [];
+      userStrings.push(inputString);
+      localStorage.setItem(`${currentUser}_strings`, JSON.stringify(userStrings));
+      displayStrings();
+      document.getElementById("input-string").value = "";
+    });
+
+    // Create account logic
+    document.getElementById("create-account-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const username = document.getElementById("new-username").value;
+      const password = document.getElementById("new-password").value;
+
+      if (accounts[username]) {
+        alert("Username already exists. Please choose a different username.");
+      } else {
+        accounts[username] = password;
+        localStorage.setItem("accounts", JSON.stringify(accounts));
+        alert("Account created successfully. You can now log in.");
+        showLoginPage();
+      }
+    });
+
+    // Page navigation
+    document.getElementById("create-account-link").addEventListener("click", showCreateAccountPage);
+    document.getElementById("back-to-login").addEventListener("click", showLoginPage);
+
+    // Display strings for the logged-in user
+    function displayStrings() {
+      const stringList = document.getElementById("string-list");
+      stringList.innerHTML = "";
+      const currentUser = localStorage.getItem("currentUser");
+      const userStrings = JSON.parse(localStorage.getItem(`${currentUser}_strings`)) || [];
+      userStrings.forEach((str, index) => {
+        const div = document.createElement("div");
+        div.textContent = `${index + 1}. ${str}`;
+        stringList.appendChild(div);
+      });
+    }
+
+    // Page view functions
+    function showLoginPage() {
+      document.getElementById("login-page").classList.remove("hidden");
+      document.getElementById("create-account-page").classList.add("hidden");
+      document.getElementById("main-page").classList.add("hidden");
+    }
+
+    function showCreateAccountPage() {
+      document.getElementById("login-page").classList.add("hidden");
+      document.getElementById("create-account-page").classList.remove("hidden");
+      document.getElementById("main-page").classList.add("hidden");
+    }
+
+    function showMainPage() {
+      document.getElementById("login-page").classList.add("hidden");
+      document.getElementById("create-account-page").classList.add("hidden");
+      document.getElementById("main-page").classList.remove("hidden");
+      displayStrings();
+    }
+  </script>
+</body>
+
+</html>
